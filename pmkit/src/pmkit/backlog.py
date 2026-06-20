@@ -375,13 +375,13 @@ class Backlog:
         lines.append(f"_{summary or 'empty'}_")
         lines.append("")
         for it in items:
-            score = "—" if it["rice"] is None else f"{it['rice']:.2f}"
-            cat = it["category"] or "—"
-            flag = " ⚠ low-confidence" if it["low_confidence"] else ""
+            score = "-" if it["rice"] is None else f"{it['rice']:.2f}"
+            cat = it["category"] or "-"
+            flag = " (low-confidence)" if it["low_confidence"] else ""
             lines.append(f"## [{it['id']}] {it['title']}")
             lines.append(
-                f"- target: `{it['target']}` · status: **{it['status']}** · "
-                f"RICE: {score} · category: {cat}{flag}"
+                f"- target: `{it['target']}` | status: **{it['status']}** | "
+                f"RICE: {score} | category: {cat}{flag}"
             )
             if it["problem"]:
                 lines.append(f"- problem: {it['problem']}")

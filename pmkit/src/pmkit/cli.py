@@ -38,7 +38,7 @@ def _emit(args: argparse.Namespace, human: str, payload) -> None:
 
 def _truncate(text: str, width: int) -> str:
     text = (text or "").replace("\n", " ")
-    return text if len(text) <= width else text[: width - 1] + "…"
+    return text if len(text) <= width else text[: width - 3] + "..."
 
 
 # --------------------------------------------------------------------- backlog
@@ -53,11 +53,11 @@ def cmd_backlog_list(args: argparse.Namespace) -> int:
         return 0
     print(f"{'ID':>3}  {'STATUS':<9}  {'RICE':>7}  {'CATEGORY':<16}  TITLE")
     for it in items:
-        score = "—" if it["rice"] is None else f"{it['rice']:.2f}"
-        flag = " ⚠" if it["low_confidence"] else ""
+        score = "-" if it["rice"] is None else f"{it['rice']:.2f}"
+        flag = " (!)" if it["low_confidence"] else ""
         print(
             f"{it['id']:>3}  {it['status']:<9}  {score:>7}  "
-            f"{(it['category'] or '—'):<16}  {_truncate(it['title'], 50)}{flag}"
+            f"{(it['category'] or '-'):<16}  {_truncate(it['title'], 50)}{flag}"
         )
     return 0
 
@@ -74,8 +74,8 @@ def cmd_backlog_show(args: argparse.Namespace) -> int:
     print(f"[{item['id']}] {item['title']}")
     print(f"  target      : {item['target']}")
     print(f"  status      : {item['status']}")
-    print(f"  category    : {item['category'] or '—'}")
-    score = "—" if item["rice"] is None else f"{item['rice']:.3f}"
+    print(f"  category    : {item['category'] or '-'}")
+    score = "-" if item["rice"] is None else f"{item['rice']:.3f}"
     print(
         f"  RICE        : {score}  "
         f"(reach={item['reach']}, impact={item['impact']}, "
@@ -162,12 +162,32 @@ def cmd_backlog_export(args: argparse.Namespace) -> int:
 
 
 def cmd_discover(args: argparse.Namespace) -> int:
-    # Implemented in U3 (connectors + dedup). Stubbed so the CLI surface is stable.
+    from .connectors import get_connectors
+    from .connectors.base import Config
+    from .discover import run_discovery
+
+    cfg = Config.from_env()
+    try:
+        connectors = get_connectors(args.source)
+    except ValueError as e:
+        print(str(e), file=sys.stderr)
+        return 2
+    with _open(args) as bl:
+        summary = run_discovery(bl, args.target, connectors=connectors, cfg=cfg)
+    if getattr(args, "json", False):
+        print(json.dumps(summary, indent=2, default=str))
+        return 0
     print(
-        "pmkit discover is implemented in unit U3 (connectors + dedup).",
-        file=sys.stderr,
+        f"discovered for {summary['target']}: "
+        f"{summary['new']} new, {summary['merged']} merged, "
+        f"{summary['fetched']} signals fetched "
+        f"({summary['low_confidence']} low-confidence)"
     )
-    return 2
+    for src, n in summary["by_source"].items():
+        print(f"  {src:<8} {n} signals")
+    for skip in summary["skipped"]:
+        print(f"  {skip['source']:<8} skipped - {skip['reason']}")
+    return 0
 
 
 # --------------------------------------------------------------------- parser
@@ -235,7 +255,21 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _force_utf8_output() -> None:
+    """Print arbitrary web content (emoji, CJK) without crashing on legacy consoles.
+
+    Windows defaults stdout to cp1252, which raises UnicodeEncodeError on any
+    non-Latin1 character in a fetched title. Reconfigure to UTF-8 with replacement.
+    """
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
+
+
 def main(argv: Optional[list[str]] = None) -> int:
+    _force_utf8_output()
     parser = build_parser()
     args = parser.parse_args(argv)
     return args.func(args)
