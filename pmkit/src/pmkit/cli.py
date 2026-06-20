@@ -135,6 +135,30 @@ def cmd_backlog_approve(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_backlog_categorize(args: argparse.Namespace) -> int:
+    try:
+        with _open(args) as bl:
+            bl.set_category(args.id, args.category)
+    except BacklogError as e:
+        print(str(e), file=sys.stderr)
+        return 1
+    _emit(args, f"opportunity {args.id} categorized as {args.category}",
+          {"id": args.id, "category": args.category})
+    return 0
+
+
+def cmd_backlog_spec(args: argparse.Namespace) -> int:
+    try:
+        with _open(args) as bl:
+            bl.set_spec(args.id, args.path)
+    except BacklogError as e:
+        print(str(e), file=sys.stderr)
+        return 1
+    _emit(args, f"opportunity {args.id} spec recorded: {args.path}",
+          {"id": args.id, "spec_path": args.path})
+    return 0
+
+
 def cmd_backlog_status(args: argparse.Namespace) -> int:
     with _open(args) as bl:
         counts = bl.counts()
@@ -243,6 +267,19 @@ def build_parser() -> argparse.ArgumentParser:
     p_appr.add_argument("id", type=int)
     p_appr.add_argument("--note")
     p_appr.set_defaults(func=cmd_backlog_approve)
+
+    p_cat = bsub.add_parser("categorize", parents=[common],
+                            help="set a product category on an opportunity")
+    p_cat.add_argument("id", type=int)
+    p_cat.add_argument("--category", required=True,
+                       choices=["agent-only", "human-and-agent"])
+    p_cat.set_defaults(func=cmd_backlog_categorize)
+
+    p_spec = bsub.add_parser("spec", parents=[common],
+                             help="record the drafted requirements doc path")
+    p_spec.add_argument("id", type=int)
+    p_spec.add_argument("--path", required=True)
+    p_spec.set_defaults(func=cmd_backlog_spec)
 
     p_stat = bsub.add_parser("status", parents=[common],
                              help="show counts by lifecycle status")
