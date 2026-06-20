@@ -1,0 +1,26 @@
+[project]
+name = "pmkit"
+version = "0.1.0"
+description = "Human-first CLI for the pm-system opportunity funnel: discovery + backlog."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Kedar Dabhadkar" }]
+dependencies = []  # core is stdlib-only; connectors use urllib, so install stays trivial
+
+[project.scripts]
+pmkit = "pmkit.cli:main"
+
+[project.optional-dependencies]
+dev = ["pytest>=7"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pmkit"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
