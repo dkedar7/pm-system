@@ -1,0 +1,29 @@
+{
+  "name": "pm-system",
+  "owner": {
+    "name": "Kedar Dabhadkar",
+    "url": "https://github.com/dkedar7"
+  },
+  "metadata": {
+    "description": "PM-as-a-System — opportunity discovery, stress-testing, and gated delegation for Claude Code.",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "pm-system",
+      "description": "An autonomous product-manager funnel: discover → stress-test/rerank → spec → gated delegate.",
+      "author": {
+        "name": "Kedar Dabhadkar",
+        "url": "https://github.com/dkedar7"
+      },
+      "homepage": "https://github.com/dkedar7/pm-system",
+      "tags": [
+        "product-management",
+        "opportunity-discovery",
+        "agentic",
+        "workflow-automation"
+      ],
+      "source": "."
+    }
+  ]
+}

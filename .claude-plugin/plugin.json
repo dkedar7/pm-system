@@ -1,0 +1,19 @@
+{
+  "name": "pm-system",
+  "version": "0.1.0",
+  "description": "An autonomous product-manager funnel: discover OSS opportunities, adversarially stress-test and rerank them, draft requirements, and gate-delegate to implementation.",
+  "author": {
+    "name": "Kedar Dabhadkar",
+    "url": "https://github.com/dkedar7"
+  },
+  "homepage": "https://github.com/dkedar7/pm-system",
+  "repository": "https://github.com/dkedar7/pm-system",
+  "license": "MIT",
+  "keywords": [
+    "product-management",
+    "opportunity-discovery",
+    "agentic",
+    "workflow-automation",
+    "claude-code"
+  ]
+}
