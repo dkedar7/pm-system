@@ -159,6 +159,31 @@ def cmd_backlog_spec(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_backlog_delegate(args: argparse.Namespace) -> int:
+    """Record delegation of an approved item. Refuses without an approval record
+    (the gate, enforced in backlog.record_delegation). The actual handoff to
+    ce-plan/lfg is performed by the pm-run skill; this records the contract."""
+    try:
+        with _open(args) as bl:
+            bl.record_delegation(args.id, spec_path=args.spec, target=args.target)
+    except BacklogError as e:
+        print(str(e), file=sys.stderr)
+        return 1
+    _emit(args, f"opportunity {args.id} delegated", {"id": args.id, "status": "delegated"})
+    return 0
+
+
+def cmd_backlog_ship(args: argparse.Namespace) -> int:
+    try:
+        with _open(args) as bl:
+            bl.mark_shipped(args.id)
+    except BacklogError as e:
+        print(str(e), file=sys.stderr)
+        return 1
+    _emit(args, f"opportunity {args.id} marked shipped", {"id": args.id, "status": "shipped"})
+    return 0
+
+
 def cmd_backlog_status(args: argparse.Namespace) -> int:
     with _open(args) as bl:
         counts = bl.counts()
@@ -280,6 +305,18 @@ def build_parser() -> argparse.ArgumentParser:
     p_spec.add_argument("id", type=int)
     p_spec.add_argument("--path", required=True)
     p_spec.set_defaults(func=cmd_backlog_spec)
+
+    p_del = bsub.add_parser("delegate", parents=[common],
+                            help="record delegation of an approved item (gated)")
+    p_del.add_argument("id", type=int)
+    p_del.add_argument("--spec", help="spec path (defaults to the recorded spec_path)")
+    p_del.add_argument("--target", help="implementation target (defaults to the opportunity target)")
+    p_del.set_defaults(func=cmd_backlog_delegate)
+
+    p_ship = bsub.add_parser("ship", parents=[common],
+                             help="mark a delegated item as shipped")
+    p_ship.add_argument("id", type=int)
+    p_ship.set_defaults(func=cmd_backlog_ship)
 
     p_stat = bsub.add_parser("status", parents=[common],
                              help="show counts by lifecycle status")
