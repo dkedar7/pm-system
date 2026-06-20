@@ -159,6 +159,37 @@ def cmd_backlog_spec(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_backlog_killtest(args: argparse.Namespace) -> int:
+    """Persist kill-test verdicts and move new -> survived | pruned. Used by the
+    pm-run orchestrator (and available to humans for parity)."""
+    try:
+        verdicts = json.loads(args.verdicts) if args.verdicts else []
+    except json.JSONDecodeError as e:
+        print(f"bad --verdicts JSON: {e}", file=sys.stderr)
+        return 1
+    try:
+        with _open(args) as bl:
+            bl.record_killtest(args.id, verdicts, survived=args.survived)
+    except BacklogError as e:
+        print(str(e), file=sys.stderr)
+        return 1
+    state = "survived" if args.survived else "pruned"
+    _emit(args, f"opportunity {args.id} {state}", {"id": args.id, "status": state})
+    return 0
+
+
+def cmd_backlog_score(args: argparse.Namespace) -> int:
+    try:
+        with _open(args) as bl:
+            rice = bl.set_scores(args.id, args.reach, args.impact, args.confidence, args.effort)
+    except (BacklogError, ValueError) as e:
+        print(str(e), file=sys.stderr)
+        return 1
+    _emit(args, f"opportunity {args.id} scored: RICE={rice:.3f}",
+          {"id": args.id, "rice": rice})
+    return 0
+
+
 def cmd_backlog_delegate(args: argparse.Namespace) -> int:
     """Record delegation of an approved item. Refuses without an approval record
     (the gate, enforced in backlog.record_delegation). The actual handoff to
@@ -305,6 +336,24 @@ def build_parser() -> argparse.ArgumentParser:
     p_spec.add_argument("id", type=int)
     p_spec.add_argument("--path", required=True)
     p_spec.set_defaults(func=cmd_backlog_spec)
+
+    p_kt = bsub.add_parser("killtest", parents=[common],
+                           help="record kill-test result (new -> survived|pruned)")
+    p_kt.add_argument("id", type=int)
+    kt_grp = p_kt.add_mutually_exclusive_group(required=True)
+    kt_grp.add_argument("--survived", dest="survived", action="store_true")
+    kt_grp.add_argument("--pruned", dest="survived", action="store_false")
+    p_kt.add_argument("--verdicts", help="JSON array of per-axis verdicts")
+    p_kt.set_defaults(func=cmd_backlog_killtest)
+
+    p_score = bsub.add_parser("score", parents=[common],
+                              help="set RICE sub-scores (computes the composite)")
+    p_score.add_argument("id", type=int)
+    p_score.add_argument("--reach", type=float, required=True)
+    p_score.add_argument("--impact", type=float, required=True)
+    p_score.add_argument("--confidence", type=float, required=True)
+    p_score.add_argument("--effort", type=float, required=True)
+    p_score.set_defaults(func=cmd_backlog_score)
 
     p_del = bsub.add_parser("delegate", parents=[common],
                             help="record delegation of an approved item (gated)")
