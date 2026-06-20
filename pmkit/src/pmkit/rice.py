@@ -39,3 +39,16 @@ def _clamp01(value: float) -> float:
     if value is None:
         return 0.0
     return max(0.0, min(1.0, float(value)))
+
+
+def rank(items: list[dict]) -> list[dict]:
+    """Return items ordered by their ``rice`` value, highest first, None last.
+
+    Pure mirror of the backlog's ``list(sort="score")`` ordering — handy for the
+    reranker and for tests, and stable on ties by id.
+    """
+    def key(it: dict):
+        rice = it.get("rice")
+        return (rice is None, -(rice or 0.0), it.get("id", 0))
+
+    return sorted(items, key=key)
