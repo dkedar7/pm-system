@@ -56,3 +56,12 @@ the backlog (and which were report-only). Stops there — it does not fix the ga
 
 > Live UI/MCP drivers need `pmkit[dogfood]` (Playwright + FastMCP client) and a browser
 > (`playwright install chromium`). The install/report/file stages are stdlib-only.
+>
+> **Windows:** the UI path also needs the **Microsoft Visual C++ 2015–2022 Redistributable
+> (x64)** — Playwright's sync API rides on greenlet, whose compiled extension links
+> `vcruntime140_1.dll` / `msvcp140.dll`. Without it the browser fails to launch with
+> `DLL load failed while importing _greenlet` (uv's standalone Python ships only
+> `vcruntime140.dll`, so plain-C extensions load but greenlet does not). Install once with
+> `winget install Microsoft.VCRedist.2015+.x64`. `playwright_available()` reflects this —
+> it returns False when the runtime can't launch, so the UI path degrades to a clean
+> finding rather than a crash.
