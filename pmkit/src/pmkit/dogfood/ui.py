@@ -30,8 +30,12 @@ def translate_steps(steps: list[dict]) -> list[dict]:
 
 
 def playwright_available() -> bool:
+    # Import the sync API, not just the top-level package: the sync API pulls in
+    # greenlet's compiled extension, so a shallow `import playwright` can pass while
+    # the browser runtime cannot actually start (e.g. a missing VC++ runtime DLL on
+    # Windows). Importing sync_playwright makes the gate reflect launchability.
     try:
-        import playwright  # noqa: F401
+        from playwright.sync_api import sync_playwright  # noqa: F401
     except Exception:
         return False
     return True
@@ -64,14 +68,36 @@ def drive_ui(url: str, steps: list[dict], *, timeout_ms: int = 10000) -> list[di
     return obs
 
 
+def _settle(page: Any) -> None:
+    """Let a reactive frontend (e.g. Streamlit) finish its rerun before we read.
+
+    Streamlit reruns asynchronously over a websocket: an interaction returns
+    immediately but the new DOM paints a beat later. Reading too soon captures the
+    pre-rerun page. We wait for network to quiesce (best-effort — the websocket may
+    never fully idle) plus a short paint budget. Cheap and generic across frameworks.
+    """
+    try:
+        page.wait_for_load_state("networkidle", timeout=3000)
+    except Exception:
+        pass
+    page.wait_for_timeout(400)
+
+
 def _run_step(page: Any, step: dict) -> dict:
     action, target, value = step["action"], step["target"], step["value"]
     try:
         if action == "set":
-            page.get_by_label(target).fill(str(value))
+            loc = page.get_by_label(target)
+            loc.fill(str(value))
+            # Streamlit (and many reactive inputs) only commit a typed value on
+            # Enter/blur, not on a programmatic fill — without this the rerun never
+            # fires and the new value is silently dropped.
+            loc.press("Enter")
+            _settle(page)
             return {"step": f"set {target}={value}", "ok": True, "observed": "set"}
         if action == "click":
             page.get_by_role("button", name=target).click()
+            _settle(page)
             return {"step": f"click {target}", "ok": True, "observed": "clicked"}
         # read
         text = page.get_by_text(target).inner_text() if target else page.inner_text("body")
