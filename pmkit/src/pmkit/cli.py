@@ -365,6 +365,30 @@ def cmd_launch_status(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_launch_listen(args: argparse.Namespace) -> int:
+    from .connectors import get_connectors
+    from .connectors.base import Config
+    from .launch.listen import run_listen
+
+    cfg = Config.from_env()
+    try:
+        connectors = get_connectors(args.source)
+    except ValueError as e:
+        print(str(e), file=sys.stderr)
+        return 2
+    with _open(args) as bl:
+        summary = run_listen(bl, args.target, connectors=connectors, cfg=cfg)
+    if getattr(args, "json", False):
+        print(json.dumps(summary, indent=2, default=str))
+        return 0
+    print(f"listened for {summary['target']}: {summary['new']} new, "
+          f"{summary['merged']} folded into existing, {summary['fetched']} reactions "
+          f"({summary['low_confidence']} low-confidence)")
+    for skip in summary["skipped"]:
+        print(f"  {skip['source']:<8} skipped - {skip['reason']}")
+    return 0
+
+
 def cmd_launch_policy(args: argparse.Namespace) -> int:
     from .launch.policy import resolve_policy
     from .launch.store import LaunchStore
@@ -547,6 +571,12 @@ def build_parser() -> argparse.ArgumentParser:
     p_lpol.add_argument("--ttl-days", dest="ttl_days", type=int, default=30)
     p_lpol.add_argument("--no-cache", dest="no_cache", action="store_true")
     p_lpol.set_defaults(func=cmd_launch_policy)
+
+    p_lli = lsub.add_parser("listen", parents=[common],
+                            help="ingest post-launch reactions into the backlog (read-only)")
+    p_lli.add_argument("target", help="owner/repo or ecosystem target the launch was for")
+    p_lli.add_argument("--source", action="append", help="limit to specific source(s)")
+    p_lli.set_defaults(func=cmd_launch_listen)
 
     return parser
 
