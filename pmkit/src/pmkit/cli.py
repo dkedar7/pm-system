@@ -271,6 +271,49 @@ def cmd_discover(args: argparse.Namespace) -> int:
 
 
 # --------------------------------------------------------------------- parser
+def cmd_dogfood_install(args: argparse.Namespace) -> int:
+    from .dogfood.install import run_documented_install
+    rep = run_documented_install(args.cmd or [])
+    if getattr(args, "json", False):
+        print(json.dumps(rep.to_dict(), indent=2))
+    else:
+        for s in rep.steps:
+            tag = "ok " if s.ok else "GAP"
+            print(f"  [{tag}] {s.command}" + ("" if s.ok else f"  -- {s.reason}"))
+    return 0 if rep.all_ok else 1
+
+
+def _emit_obs(args: argparse.Namespace, obs: list) -> int:
+    if getattr(args, "json", False):
+        print(json.dumps(obs, indent=2, default=str))
+    else:
+        for o in obs:
+            print(f"  [{'ok ' if o['ok'] else 'FAIL'}] {o['step']}")
+    return 0 if all(o["ok"] for o in obs) else 1
+
+
+def cmd_dogfood_ui(args: argparse.Namespace) -> int:
+    from .dogfood.ui import drive_ui
+    try:
+        obs = drive_ui(args.url, json.loads(args.steps))
+    except Exception as e:
+        print(str(e), file=sys.stderr)
+        return 1
+    return _emit_obs(args, obs)
+
+
+def cmd_dogfood_mcp(args: argparse.Namespace) -> int:
+    import shlex
+
+    from .dogfood.mcp import drive_mcp
+    try:
+        obs = drive_mcp(shlex.split(args.server), json.loads(args.calls))
+    except Exception as e:
+        print(str(e), file=sys.stderr)
+        return 1
+    return _emit_obs(args, obs)
+
+
 def build_parser() -> argparse.ArgumentParser:
     # Shared global flags, attached to each leaf command so they work *after* the
     # subcommand (e.g. `pmkit backlog list --json`), which is what users/agents type.
@@ -374,6 +417,28 @@ def build_parser() -> argparse.ArgumentParser:
     p_exp = bsub.add_parser("export", parents=[common], help="export a markdown snapshot")
     p_exp.add_argument("--out", help="write to this path instead of stdout")
     p_exp.set_defaults(func=cmd_backlog_export)
+
+    # dogfood — acceptance-test helpers (pm-dogfood skill composes these)
+    p_df = sub.add_parser("dogfood", help="acceptance-test a shipped product")
+    dsub = p_df.add_subparsers(dest="dogfood_command", required=True)
+
+    p_dfi = dsub.add_parser("install", parents=[common],
+                            help="run documented install commands in a clean room")
+    p_dfi.add_argument("--cmd", action="append", required=True,
+                       help="a documented command, verbatim (repeatable)")
+    p_dfi.set_defaults(func=cmd_dogfood_install)
+
+    p_dfu = dsub.add_parser("ui", parents=[common],
+                            help="drive a running app's UI in a real browser")
+    p_dfu.add_argument("--url", required=True)
+    p_dfu.add_argument("--steps", required=True, help="JSON list of {action,target,value}")
+    p_dfu.set_defaults(func=cmd_dogfood_ui)
+
+    p_dfm = dsub.add_parser("mcp", parents=[common],
+                            help="drive an MCP server as a real client")
+    p_dfm.add_argument("--server", required=True, help="server launch command (quoted)")
+    p_dfm.add_argument("--calls", required=True, help="JSON list of {tool,args}")
+    p_dfm.set_defaults(func=cmd_dogfood_mcp)
 
     return parser
 

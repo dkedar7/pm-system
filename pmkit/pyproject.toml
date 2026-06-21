@@ -13,6 +13,9 @@ pmkit = "pmkit.cli:main"
 
 [project.optional-dependencies]
 dev = ["pytest>=7"]
+# Live dogfood drivers (real browser + real MCP client). Core pmkit stays stdlib-only;
+# these are imported lazily and only needed for live pm-dogfood runs.
+dogfood = ["playwright>=1.40", "fastmcp>=3,<4"]
 
 [build-system]
 requires = ["hatchling"]
