@@ -61,6 +61,13 @@ def test_plan_calls_args_must_be_dict():
         plan_calls([{"tool": "x", "args": ["nope"]}])
 
 
+def test_mcp_module_imports_asyncio_at_module_scope():
+    # regression: _drive_async uses asyncio.wait_for; a function-local import left it
+    # undefined there (NameError at runtime). It must be a module-level import.
+    import pmkit.dogfood.mcp as m
+    assert getattr(m, "asyncio", None) is not None
+
+
 def test_mcp_available_is_bool_and_gates_drive():
     assert isinstance(mcp_client_available(), bool)
     if not mcp_client_available():

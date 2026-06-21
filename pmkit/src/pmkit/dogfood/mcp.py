@@ -12,6 +12,7 @@ operator-reviewed source, not an untrusted/auto-scraped doc without a human in t
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
 
@@ -42,8 +43,6 @@ def drive_mcp(server_cmd: list[str], calls: list[dict], *, timeout: float = 30.0
     plan = plan_calls(calls)
     if not mcp_client_available():
         raise RuntimeError("FastMCP client not available — install pmkit[dogfood] (fastmcp)")
-    import asyncio
-
     return asyncio.run(_drive_async(server_cmd, plan, timeout))
 
 
