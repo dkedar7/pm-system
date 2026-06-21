@@ -1,0 +1,97 @@
+<svg width="1280" height="400" viewBox="0 0 1280 400" fill="none" xmlns="http://www.w3.org/2000/svg" font-family="'Segoe UI', system-ui, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1280" y2="400" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0B1020"/><stop offset="1" stop-color="#0E1526"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#6366F1" stop-opacity="0.16"/><stop offset="1" stop-color="#6366F1" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="funnel" x1="0" y1="92" x2="0" y2="254" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#4F46E5" stop-opacity="0.28"/><stop offset="1" stop-color="#6366F1" stop-opacity="0.04"/>
+    </linearGradient>
+    <linearGradient id="amber" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FBBF24"/><stop offset="1" stop-color="#F59E0B"/>
+    </linearGradient>
+    <pattern id="grid" width="34" height="34" patternUnits="userSpaceOnUse">
+      <path d="M34 0H0V34" fill="none" stroke="#26314F" stroke-width="1" stroke-opacity="0.35"/>
+    </pattern>
+    <filter id="soft" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="7" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- backdrop -->
+  <rect width="1280" height="400" rx="20" fill="url(#bg)"/>
+  <rect width="1280" height="400" rx="20" fill="url(#grid)" opacity="0.6"/>
+  <ellipse cx="1010" cy="210" rx="340" ry="250" fill="url(#glow)"/>
+  <rect x="0.75" y="0.75" width="1278.5" height="398.5" rx="19.25" stroke="#1E293B" stroke-width="1.5"/>
+
+  <!-- ============ LEFT: wordmark block ============ -->
+  <circle cx="70" cy="115" r="4" fill="#F59E0B"/>
+  <text x="84" y="120" font-family="'Cascadia Code','Consolas',monospace" font-size="13" letter-spacing="3" fill="#64748B">OPEN-SOURCE &#183; CLI &amp; CLAUDE CODE PLUGIN</text>
+
+  <text x="64" y="206" font-family="'Cascadia Code','Consolas','SF Mono',monospace" font-size="76" font-weight="700" letter-spacing="-1">
+    <tspan fill="#818CF8">pm</tspan><tspan fill="#475569">-</tspan><tspan fill="#F1F5F9">system</tspan>
+  </text>
+
+  <text x="66" y="250" font-size="24" fill="#94A3B8">A product manager that runs as a <tspan fill="#CBD5E1" font-weight="600">funnel</tspan>.</text>
+
+  <text x="66" y="298" font-family="'Cascadia Code','Consolas',monospace" font-size="16" fill="#64748B">
+    discover <tspan fill="#6366F1">&#8594;</tspan> stress-test <tspan fill="#6366F1">&#8594;</tspan> rank <tspan fill="#6366F1">&#8594;</tspan> spec <tspan fill="#6366F1">&#8594;</tspan> <tspan fill="#F59E0B">&#10003; ship</tspan>
+  </text>
+
+  <!-- ============ RIGHT: 3D funnel illustration ============ -->
+  <!-- incoming signals -->
+  <g fill="#818CF8">
+    <circle cx="850" cy="60" r="3" fill="#6366F1" opacity="0.7"/>
+    <circle cx="895" cy="44" r="2.5" opacity="0.6"/>
+    <circle cx="935" cy="72" r="4" opacity="0.9"/>
+    <circle cx="970" cy="50" r="2.5" fill="#4F46E5" opacity="0.6"/>
+    <circle cx="1010" cy="66" r="3" fill="#6366F1" opacity="0.85"/>
+    <circle cx="1045" cy="46" r="2.5" opacity="0.6"/>
+    <circle cx="1080" cy="70" r="3.5" opacity="0.85"/>
+    <circle cx="1120" cy="52" r="2.5" fill="#6366F1" opacity="0.6"/>
+    <circle cx="1160" cy="64" r="3" fill="#6366F1" opacity="0.7"/>
+    <circle cx="1195" cy="54" r="2.5" fill="#4F46E5" opacity="0.5"/>
+    <circle cx="870" cy="92" r="2.5" fill="#6366F1" opacity="0.5"/>
+    <circle cx="915" cy="104" r="3" opacity="0.7"/>
+    <circle cx="960" cy="96" r="2.5" fill="#4F46E5" opacity="0.5"/>
+    <circle cx="1025" cy="100" r="3" fill="#6366F1" opacity="0.7"/>
+    <circle cx="1070" cy="94" r="2.5" opacity="0.6"/>
+    <circle cx="1115" cy="104" r="3" fill="#6366F1" opacity="0.55"/>
+    <circle cx="1165" cy="96" r="2.5" fill="#4F46E5" opacity="0.5"/>
+    <circle cx="1200" cy="82" r="2.5" opacity="0.5"/>
+    <circle cx="830" cy="76" r="2" fill="#6366F1" opacity="0.45"/>
+  </g>
+
+  <!-- funnel body -->
+  <path d="M825 118 A185 26 0 0 0 1195 118 L1036 248 A26 6 0 0 1 984 248 Z" fill="url(#funnel)"/>
+  <!-- walls -->
+  <line x1="825" y1="118" x2="984" y2="248" stroke="#6366F1" stroke-width="1.5" stroke-opacity="0.5"/>
+  <line x1="1195" y1="118" x2="1036" y2="248" stroke="#6366F1" stroke-width="1.5" stroke-opacity="0.5"/>
+  <!-- neck -->
+  <ellipse cx="1010" cy="248" rx="26" ry="6" fill="#0B1020" stroke="#6366F1" stroke-width="1.2" stroke-opacity="0.5"/>
+  <!-- mouth rim (3D opening) -->
+  <ellipse cx="1010" cy="118" rx="185" ry="26" fill="#0E1730" fill-opacity="0.55" stroke="#6366F1" stroke-width="1.6" stroke-opacity="0.7"/>
+  <ellipse cx="1010" cy="118" rx="120" ry="16" fill="none" stroke="#4F46E5" stroke-width="1" stroke-opacity="0.35"/>
+
+  <!-- flow into the stack -->
+  <line x1="1010" y1="254" x2="1010" y2="266" stroke="#6366F1" stroke-width="1.4" stroke-opacity="0.4" stroke-dasharray="2 3"/>
+
+  <!-- ranked cards -->
+  <g>
+    <rect x="935" y="268" width="150" height="26" rx="8" fill="#161E36" stroke="#3B4FB0" stroke-width="1.2" stroke-opacity="0.85"/>
+    <circle cx="952" cy="281" r="3" fill="#818CF8"/><rect x="965" y="279" width="95" height="4" rx="2" fill="#3B4FB0"/>
+
+    <rect x="935" y="300" width="150" height="26" rx="8" fill="#161E36" stroke="#4F46E5" stroke-width="1.2" stroke-opacity="0.85"/>
+    <circle cx="952" cy="313" r="3" fill="#6366F1"/><rect x="965" y="311" width="95" height="4" rx="2" fill="#3B4FB0"/>
+  </g>
+
+  <!-- approved / ship card -->
+  <g filter="url(#soft)">
+    <rect x="935" y="332" width="150" height="26" rx="8" fill="#2A2012" stroke="#F59E0B" stroke-width="1.5"/>
+  </g>
+  <circle cx="952" cy="345" r="3" fill="#FBBF24"/><rect x="965" y="343" width="78" height="4" rx="2" fill="#B45309"/>
+  <g filter="url(#soft)"><circle cx="1101" cy="345" r="14" fill="url(#amber)"/></g>
+  <path d="M1094 345 l5 5 l9 -11" stroke="#0B1020" stroke-width="2.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

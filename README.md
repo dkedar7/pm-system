@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/header.png" alt="pm-system — a product manager that runs as a funnel" width="100%" />
+</p>
+
 # pm-system
 
 **A product manager that runs as a funnel.** Point it at an open-source target and it
