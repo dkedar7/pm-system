@@ -365,6 +365,25 @@ def cmd_launch_status(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_launch_plan(args: argparse.Namespace) -> int:
+    from .launch.plan import build_plan, render_markdown
+    try:
+        targets = json.loads(args.targets) if args.targets else []
+    except json.JSONDecodeError as e:
+        print(f"bad --targets JSON: {e}", file=sys.stderr)
+        return 1
+    try:
+        plan = build_plan(args.product, targets)
+    except ValueError as e:
+        print(str(e), file=sys.stderr)
+        return 1
+    if getattr(args, "json", False):
+        print(json.dumps(plan, indent=2, default=str))
+    else:
+        print(render_markdown(plan))
+    return 0
+
+
 def cmd_launch_listen(args: argparse.Namespace) -> int:
     from .connectors import get_connectors
     from .connectors.base import Config
@@ -577,6 +596,13 @@ def build_parser() -> argparse.ArgumentParser:
     p_lli.add_argument("target", help="owner/repo or ecosystem target the launch was for")
     p_lli.add_argument("--source", action="append", help="limit to specific source(s)")
     p_lli.set_defaults(func=cmd_launch_listen)
+
+    p_lpl = lsub.add_parser("plan", parents=[common],
+                            help="render an emit-only launch plan from structured targets")
+    p_lpl.add_argument("--product", required=True)
+    p_lpl.add_argument("--targets", required=True,
+                       help="JSON list of {platform, community, [thread], [angle], [day], [policy]}")
+    p_lpl.set_defaults(func=cmd_launch_plan)
 
     return parser
 
