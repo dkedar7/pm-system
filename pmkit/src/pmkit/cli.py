@@ -365,6 +365,30 @@ def cmd_launch_status(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_launch_policy(args: argparse.Namespace) -> int:
+    from .launch.policy import resolve_policy
+    from .launch.store import LaunchStore
+    with LaunchStore(getattr(args, "db", None)) as st:
+        result = resolve_policy(
+            st, args.community, platform=args.platform,
+            ttl_days=args.ttl_days, use_cache=not args.no_cache,
+        )
+    if getattr(args, "json", False):
+        print(json.dumps(result, indent=2, default=str))
+    else:
+        v = result["verdict"].upper()
+        print(f"[{v}] {args.platform} {args.community}"
+              + (" (cached)" if result.get("cached") else ""))
+        for r in result.get("cited_rules", []):
+            print(f"  - rule: {_truncate(r.get('text',''), 100)}")
+        if result.get("note"):
+            print(f"  note: {result['note']}")
+        if result.get("error"):
+            print(f"  (rules unavailable: {result['error']})")
+    # block is the only verdict that should fail the command (a hard "do not post here").
+    return 1 if result["verdict"] == "block" else 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     # Shared global flags, attached to each leaf command so they work *after* the
     # subcommand (e.g. `pmkit backlog list --json`), which is what users/agents type.
@@ -514,6 +538,15 @@ def build_parser() -> argparse.ArgumentParser:
                               help="show launch-state counts by status")
     p_lstat.add_argument("--product")
     p_lstat.set_defaults(func=cmd_launch_status)
+
+    p_lpol = lsub.add_parser("policy", parents=[common],
+                             help="research a community's mod policy (block/warn/ok + cited rule)")
+    p_lpol.add_argument("--community", required=True, help="e.g. r/gis")
+    p_lpol.add_argument("--platform", default="reddit",
+                        choices=["reddit", "hackernews", "x", "linkedin"])
+    p_lpol.add_argument("--ttl-days", dest="ttl_days", type=int, default=30)
+    p_lpol.add_argument("--no-cache", dest="no_cache", action="store_true")
+    p_lpol.set_defaults(func=cmd_launch_policy)
 
     return parser
 
