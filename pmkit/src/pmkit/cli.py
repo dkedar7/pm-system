@@ -365,6 +365,31 @@ def cmd_launch_status(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_launch_capture(args: argparse.Namespace) -> int:
+    from .launch.collateral import plan_capture, run_capture
+    try:
+        spec = json.loads(args.spec) if args.spec else []
+        plan = plan_capture(spec)
+    except (json.JSONDecodeError, ValueError) as e:
+        print(str(e), file=sys.stderr)
+        return 1
+    results = run_capture(plan, args.outdir)
+    if getattr(args, "json", False):
+        print(json.dumps(results, indent=2, default=str))
+    else:
+        for r in results:
+            if r.get("ok"):
+                tag = "ok  "
+            elif r.get("skipped"):
+                tag = "skip"
+            else:
+                tag = "FAIL"
+            detail = r.get("path") or r.get("reason") or ""
+            print(f"  [{tag}] {r['kind']}:{r['name']}  {detail}")
+    # only a hard error (ran but failed) is a nonzero exit; skips are environmental.
+    return 1 if any((not r.get("ok") and not r.get("skipped")) for r in results) else 0
+
+
 def cmd_launch_plan(args: argparse.Namespace) -> int:
     from .launch.plan import build_plan, render_markdown
     try:
@@ -603,6 +628,13 @@ def build_parser() -> argparse.ArgumentParser:
     p_lpl.add_argument("--targets", required=True,
                        help="JSON list of {platform, community, [thread], [angle], [day], [policy]}")
     p_lpl.set_defaults(func=cmd_launch_plan)
+
+    p_lcap = lsub.add_parser("capture", parents=[common],
+                             help="capture Tier-A collateral (record the real product working)")
+    p_lcap.add_argument("--spec", required=True,
+                        help="JSON list of capture requests {kind, ...}")
+    p_lcap.add_argument("--outdir", required=True, help="directory to write artifacts to")
+    p_lcap.set_defaults(func=cmd_launch_capture)
 
     return parser
 
