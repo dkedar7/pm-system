@@ -32,6 +32,10 @@ degrades gracefully to what it can reach.
 
 ## How it works
 
+<p align="center">
+  <img src="assets/architecture.png" alt="pm-system architecture: signals feed Discover → Stress-test → Rerank → Spec → human gate → Delegate, over one persistent SQLite backlog the funnel loops through" width="100%" />
+</p>
+
 ```
 discover ──► stress-test (kill-test panel) ──► rerank (RICE) ──► spec ──► [human gate] ──► delegate
    │                                                                                          │
