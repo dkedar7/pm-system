@@ -365,6 +365,36 @@ def cmd_launch_status(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_launch_draft(args: argparse.Namespace) -> int:
+    from .launch.drafts import record_draft
+    from .launch.store import LaunchStore
+    critic = None
+    if args.critic:
+        try:
+            critic = json.loads(args.critic)
+        except json.JSONDecodeError as e:
+            print(f"bad --critic JSON: {e}", file=sys.stderr)
+            return 1
+    with LaunchStore(getattr(args, "db", None)) as st:
+        did = record_draft(st, args.product, args.platform, args.text,
+                           community=args.community, critic=critic)
+    _emit(args, f"recorded starting-point draft {did} (you write the final post)",
+          {"id": did, "kind": "starting_point"})
+    return 0
+
+
+def cmd_launch_drafts(args: argparse.Namespace) -> int:
+    from .launch.drafts import emit
+    from .launch.store import LaunchStore
+    with LaunchStore(getattr(args, "db", None)) as st:
+        drafts = st.list_drafts(product=args.product)
+    if getattr(args, "json", False):
+        print(json.dumps(drafts, indent=2, default=str))
+        return 0
+    print(emit(drafts))
+    return 0
+
+
 def cmd_launch_capture(args: argparse.Namespace) -> int:
     from .launch.collateral import plan_capture, run_capture
     try:
@@ -635,6 +665,21 @@ def build_parser() -> argparse.ArgumentParser:
                         help="JSON list of capture requests {kind, ...}")
     p_lcap.add_argument("--outdir", required=True, help="directory to write artifacts to")
     p_lcap.set_defaults(func=cmd_launch_capture)
+
+    p_ldr = lsub.add_parser("draft", parents=[common],
+                            help="store an agent-produced draft STARTING-POINT (never a post)")
+    p_ldr.add_argument("--product", required=True)
+    p_ldr.add_argument("--platform", required=True,
+                       choices=["reddit", "hackernews", "x", "linkedin"])
+    p_ldr.add_argument("--community")
+    p_ldr.add_argument("--text", required=True)
+    p_ldr.add_argument("--critic", help="JSON slop-critic verdict {flagged,score,tells,suggestion}")
+    p_ldr.set_defaults(func=cmd_launch_draft)
+
+    p_ldrs = lsub.add_parser("drafts", parents=[common],
+                             help="list/emit stored draft starting-points (with critic flags)")
+    p_ldrs.add_argument("--product")
+    p_ldrs.set_defaults(func=cmd_launch_drafts)
 
     return parser
 

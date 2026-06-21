@@ -71,6 +71,22 @@ class LaunchStore:
             );
             CREATE UNIQUE INDEX IF NOT EXISTS idx_mod_policy_pc
                 ON mod_policy_cache(platform, community);
+
+            -- Draft STARTING-POINTS only. There is deliberately no 'status'/'final'/
+            -- 'postable' column: the data model itself cannot represent a finished post,
+            -- so nothing here can ever be mistaken for one. The human writes the final.
+            CREATE TABLE IF NOT EXISTS launch_drafts (
+                id             INTEGER PRIMARY KEY AUTOINCREMENT,
+                product        TEXT NOT NULL,
+                platform       TEXT NOT NULL,
+                community      TEXT,
+                kind           TEXT NOT NULL DEFAULT 'starting_point',
+                text           TEXT NOT NULL,
+                critic_flagged INTEGER,
+                critic_score   REAL,
+                critic         TEXT,
+                created_at     TEXT NOT NULL
+            );
             """
         )
         self.conn.commit()
@@ -195,3 +211,50 @@ class LaunchStore:
         d: dict[str, Any] = dict(row)
         d["cited_rules"] = json.loads(d.get("cited_rules") or "[]")
         return d
+
+    # ----------------------------------------------------------- draft storage
+    # NOTE: ``kind`` is hardcoded to 'starting_point' on insert and there is no setter to
+    # change it — the never-final guardrail is structural, not a convention.
+    def add_draft(
+        self,
+        product: str,
+        platform: str,
+        text: str,
+        *,
+        community: Optional[str] = None,
+        critic: Optional[dict] = None,
+    ) -> int:
+        cur = self.conn.execute(
+            """
+            INSERT INTO launch_drafts
+                (product, platform, community, kind, text,
+                 critic_flagged, critic_score, critic, created_at)
+            VALUES (?, ?, ?, 'starting_point', ?, ?, ?, ?, ?)
+            """,
+            (
+                product, platform, community, text,
+                (1 if critic and critic.get("flagged") else 0) if critic else None,
+                (critic.get("score") if critic else None),
+                (json.dumps(critic) if critic else None),
+                _now(),
+            ),
+        )
+        self.conn.commit()
+        return int(cur.lastrowid)
+
+    def list_drafts(self, product: Optional[str] = None) -> list[dict]:
+        if product:
+            rows = self.conn.execute(
+                "SELECT * FROM launch_drafts WHERE product = ? ORDER BY id", (product,)
+            ).fetchall()
+        else:
+            rows = self.conn.execute(
+                "SELECT * FROM launch_drafts ORDER BY id"
+            ).fetchall()
+        out = []
+        for r in rows:
+            d = dict(r)
+            d["critic"] = json.loads(d["critic"]) if d.get("critic") else None
+            d["critic_flagged"] = bool(d["critic_flagged"]) if d["critic_flagged"] is not None else None
+            out.append(d)
+        return out
