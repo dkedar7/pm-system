@@ -61,6 +61,20 @@ def test_rerun_merges_not_duplicates(bl):
     assert len(bl.list()) == 1
 
 
+def test_new_count_excludes_exact_key_dups(bl):
+    """The over-count fix: same dedup_key (first 12 words) but dissimilar full text, so
+    near-dup misses but exact-key matches -> counted as merged, not new."""
+    shared = "retries timeouts backoff jitter circuit breaker resilience policy network client library wrapper"
+    cands = [
+        candidate("Title A", f"{shared} aaa bbb ccc ddd eee fff", "github", "https://a", engagement=5),
+        candidate("Title B", f"{shared} ggg hhh iii jjj kkk lll", "hn", "https://b", engagement=5),
+    ]
+    summary = run_discovery(bl, "o/r", connectors=[FakeConnector("m", cands)], cfg=Config(),
+                            near_threshold=0.6)
+    assert summary["new"] == 1 and summary["merged"] == 1
+    assert len(bl.list()) == 1  # only one real row
+
+
 def test_unavailable_connector_skipped(bl):
     conn = FakeConnector("web", avail=(False, "no BRAVE_API_KEY"))
     summary = run_discovery(bl, "o/r", connectors=[conn], cfg=Config())

@@ -44,13 +44,20 @@ const SCORES = {
   required: ['reach', 'impact', 'confidence', 'effort'],
 }
 
+const STATUS_SCHEMA = {
+  type: 'object',
+  properties: { status: { type: 'string' } },
+  required: ['status'],
+}
+
 const AXES = [
   { axis: 'already-solved', agent: 'pm-killtest-solved' },
   { axis: 'pain-is-rare', agent: 'pm-killtest-rarity' },
   { axis: 'infeasible', agent: 'pm-killtest-feasibility' },
   { axis: "won't-be-adopted", agent: 'pm-killtest-adoption' },
 ]
-const PRUNE_AT = 3 // prune when >= 3 of 4 axes refute (strict majority of 4)
+// The survival rule lives in pmkit (`killtest.decide_survival`, applied via
+// `pmkit backlog killtest --decide`): already-solved is dispositive, else majority (>=3/4).
 
 const target = typeof args === 'string' ? args : (args && args.target) || ''
 if (!target) {
@@ -93,15 +100,14 @@ const results = await pipeline(
       )
     )
     const got = verdicts.filter(Boolean) // a dead agent degrades to remaining verdicts
-    const refutes = got.filter((v) => v.verdict === 'refute').length
-    const survived = refutes < PRUNE_AT
-    const flag = survived ? '--survived' : '--pruned'
     const payload = JSON.stringify(got).replace(/'/g, '')
-    await agent(
-      `Run: pmkit backlog killtest ${id} ${flag} --verdicts '${payload}'`,
-      { label: `persist-killtest:${id}`, phase: 'Stress-test' }
+    // pmkit applies the survival rule (already-solved dispositive, else majority) and
+    // records the status — single source of truth, so JS and Python never drift.
+    const decided = await agent(
+      `Run: \`pmkit backlog killtest ${id} --decide --verdicts '${payload}' --json\` and return the resulting {status}.`,
+      { label: `persist-killtest:${id}`, phase: 'Stress-test', schema: STATUS_SCHEMA }
     )
-    return { id, survived, refutes }
+    return { id, survived: !!decided && decided.status === 'survived' }
   },
   // Stage C: only survivors are scored.
   async (kt, id) => {

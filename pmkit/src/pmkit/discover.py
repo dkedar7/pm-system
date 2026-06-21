@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from .backlog import Backlog
+from .backlog import Backlog, make_dedup_key
 from .connectors import get_connectors
 from .connectors.base import Config, ConnectorError
 from .dedup import DEFAULT_THRESHOLD, find_near_duplicate
@@ -58,7 +58,11 @@ def run_discovery(
         for cand in cands:
             summary["fetched"] += 1
             low_conf = cand["engagement"] < cfg.min_engagement or not cand["source"].get("url")
-            dup = find_near_duplicate(cand, current, near_threshold)
+            # Match exact-key first (the same dedup add_candidate would do internally), then
+            # near-duplicate — so a candidate that add_candidate would merge is counted as
+            # 'merged', not 'new' (fixes the new-count overcount).
+            key = make_dedup_key(target, cand["problem"])
+            dup = backlog.find_existing(target, key) or find_near_duplicate(cand, current, near_threshold)
             if dup is not None:
                 backlog.attach_evidence(dup["id"], [cand["source"]])
                 summary["merged"] += 1

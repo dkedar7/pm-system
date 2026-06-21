@@ -167,14 +167,21 @@ def cmd_backlog_killtest(args: argparse.Namespace) -> int:
     except json.JSONDecodeError as e:
         print(f"bad --verdicts JSON: {e}", file=sys.stderr)
         return 1
+    reason = ""
+    if getattr(args, "decide", False):
+        from .killtest import decide_survival
+        survived, reason = decide_survival(verdicts)
+    else:
+        survived = args.survived
     try:
         with _open(args) as bl:
-            bl.record_killtest(args.id, verdicts, survived=args.survived)
+            bl.record_killtest(args.id, verdicts, survived=survived)
     except BacklogError as e:
         print(str(e), file=sys.stderr)
         return 1
-    state = "survived" if args.survived else "pruned"
-    _emit(args, f"opportunity {args.id} {state}", {"id": args.id, "status": state})
+    state = "survived" if survived else "pruned"
+    human = f"opportunity {args.id} {state}" + (f" ({reason})" if reason else "")
+    _emit(args, human, {"id": args.id, "status": state, "reason": reason})
     return 0
 
 
@@ -389,8 +396,10 @@ def build_parser() -> argparse.ArgumentParser:
     kt_grp = p_kt.add_mutually_exclusive_group(required=True)
     kt_grp.add_argument("--survived", dest="survived", action="store_true")
     kt_grp.add_argument("--pruned", dest="survived", action="store_false")
+    kt_grp.add_argument("--decide", action="store_true",
+                        help="apply the survival rule from --verdicts (already-solved is dispositive)")
     p_kt.add_argument("--verdicts", help="JSON array of per-axis verdicts")
-    p_kt.set_defaults(func=cmd_backlog_killtest)
+    p_kt.set_defaults(func=cmd_backlog_killtest, survived=None)
 
     p_score = bsub.add_parser("score", parents=[common],
                               help="set RICE sub-scores (computes the composite)")

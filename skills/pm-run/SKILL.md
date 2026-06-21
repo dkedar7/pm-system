@@ -20,9 +20,11 @@ tool, passing the target. It performs:
 
 1. **Discover** — `pmkit discover <target>` ingests + dedups signals into `new` candidates.
 2. **Kill-test** — for each `new` candidate, fan out the four `pm-killtest-*` agents
-   (already-solved, pain-is-rare, infeasible, won't-be-adopted) in parallel. Apply the
-   **majority rule: prune when ≥ 3 of 4 axes refute**; otherwise the candidate survives.
-   Record verdicts: `pmkit backlog ...` (the workflow writes `survived`/`pruned`).
+   (already-solved, pain-is-rare, infeasible, won't-be-adopted) in parallel, then let
+   `pmkit backlog killtest <id> --decide --verdicts '<json>'` apply the survival rule:
+   **already-solved is dispositive** (a confident already-solved refute prunes regardless
+   of count), otherwise prune on a **majority (≥ 3 of 4) refute**. pmkit records
+   `survived`/`pruned` (single source of truth, so the workflow and CLI never drift).
 3. **Rerank** — for each survivor, run `pm-reranker` to get RICE sub-scores, then persist
    with `pmkit` (the composite is computed by `pmkit`'s RICE function).
 4. **Halt** — the run ends with a ranked backlog of `survived` items. It does **not** advance

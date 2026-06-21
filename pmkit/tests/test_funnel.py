@@ -79,7 +79,7 @@ def test_workflow_script_structure():
         assert ag in text
     assert "pmkit discover" in text
     assert "pmkit backlog killtest" in text and "pmkit backlog score" in text
-    assert "PRUNE_AT = 3" in text and "refutes < PRUNE_AT" in text
+    assert "--decide" in text             # survival rule delegated to pmkit (single source)
     assert "nothing new" in text          # zero-candidate short-circuit
     assert "pipeline(" in text and "parallel(" in text
     assert ".filter(Boolean)" in text     # degrade past a dead kill-test agent
