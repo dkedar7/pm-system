@@ -44,3 +44,10 @@ def test_flaky_gap_is_report_only(bl):
     out = file_gaps(bl, "o/r", [_gap("flaky thing")], confirmed=set())
     assert out["filed"] == [] and out["skipped"] == ["flaky thing"]
     assert bl.list() == []
+
+
+def test_distinct_titles_same_output_both_filed(bl):
+    """Distinct gaps with identical observed text must NOT collapse (title is in the key)."""
+    gaps = [_gap("gap A", observed="exit 1"), _gap("gap B", observed="exit 1")]
+    out = file_gaps(bl, "o/r", gaps, confirmed={"gap A", "gap B"})
+    assert len(out["filed"]) == 2 and len(bl.list()) == 2

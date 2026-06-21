@@ -284,12 +284,15 @@ def cmd_dogfood_install(args: argparse.Namespace) -> int:
 
 
 def _emit_obs(args: argparse.Namespace, obs: list) -> int:
+    if not obs:
+        print("no observations recorded (empty step/call plan?)", file=sys.stderr)
+        return 1  # exercising nothing is not a pass
     if getattr(args, "json", False):
         print(json.dumps(obs, indent=2, default=str))
     else:
         for o in obs:
-            print(f"  [{'ok ' if o['ok'] else 'FAIL'}] {o['step']}")
-    return 0 if all(o["ok"] for o in obs) else 1
+            print(f"  [{'ok ' if o.get('ok') else 'FAIL'}] {o.get('step', '')}")
+    return 0 if all(o.get("ok") for o in obs) else 1
 
 
 def cmd_dogfood_ui(args: argparse.Namespace) -> int:

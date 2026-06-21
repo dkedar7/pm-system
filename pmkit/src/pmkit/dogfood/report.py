@@ -83,8 +83,22 @@ def _observations(interface: str, obs: Optional[list[dict]]) -> list[Finding]:
 
 
 def parity_check(ui_state: dict, mcp_state: dict) -> list[Finding]:
-    """Compare the two surfaces' end states on shared keys; divergence is a gap."""
+    """Compare the two surfaces' end states on shared keys; divergence is a gap.
+
+    Disjoint non-empty states are a gap too ("not checkable") — they must not read as a
+    clean pass. Two empty states yield nothing (there was no state to compare)."""
     shared = set(ui_state) & set(mcp_state)
+    if not shared:
+        if ui_state or mcp_state:
+            return [Finding(
+                interface="parity",
+                title="parity not checkable: surfaces share no state keys",
+                status="fail",
+                gap=True,
+                claim="UI and MCP surfaces expose comparable state",
+                observed=f"ui keys={sorted(map(str, ui_state))} mcp keys={sorted(map(str, mcp_state))}",
+            )]
+        return []
     diverged = [
         Finding(
             interface="parity",

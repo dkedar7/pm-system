@@ -47,3 +47,13 @@ def test_to_dict_shape():
     rep = run_documented_install([f'{PY} -c "print(1)"'])
     d = rep.to_dict()
     assert d["all_ok"] is True and d["steps"][0]["command"]
+
+
+def test_clean_env_excludes_secrets(monkeypatch):
+    from pmkit.dogfood.install import _clean_env
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-secret")
+    monkeypatch.setenv("PATH", "/usr/bin")
+    env = _clean_env(None)
+    assert "ANTHROPIC_API_KEY" not in env  # operator secrets withheld
+    assert "PATH" in env                    # but the basics pass through
+    assert _clean_env({"ANTHROPIC_API_KEY": "x"})["ANTHROPIC_API_KEY"] == "x"  # opt-in

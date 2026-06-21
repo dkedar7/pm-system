@@ -37,8 +37,13 @@ def test_parity_match_is_pass():
     assert len(findings) == 1 and findings[0].gap is False and findings[0].status == "pass"
 
 
-def test_parity_no_shared_keys_empty():
-    assert parity_check({"a": 1}, {"b": 2}) == []
+def test_parity_disjoint_nonempty_is_not_checkable():
+    f = parity_check({"a": 1}, {"b": 2})
+    assert len(f) == 1 and f[0].gap and "not checkable" in f[0].title
+
+
+def test_parity_both_empty_is_silent():
+    assert parity_check({}, {}) == []
 
 
 def test_build_report_with_parity_states():

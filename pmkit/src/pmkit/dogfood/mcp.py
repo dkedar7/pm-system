@@ -4,6 +4,10 @@ The call-plan validation is pure and unit-tested. The live handshake lazily impo
 FastMCP client and is gated on availability (FastMCP is an optional `pmkit[dogfood]` dep,
 not a core one), so the suite runs without it. The driver launches the documented server
 command over stdio and calls the documented tools — exercising the real wire, not the engine.
+
+SECURITY: the server launch command is executed verbatim with the operator's local
+privileges (same trust assumption as the install runner) — it must come from a trusted,
+operator-reviewed source, not an untrusted/auto-scraped doc without a human in the loop.
 """
 
 from __future__ import annotations

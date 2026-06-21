@@ -41,18 +41,26 @@ def drive_ui(url: str, steps: list[dict], *, timeout_ms: int = 10000) -> list[di
     """Drive the app's rendered UI in a real browser. Raises if Playwright is absent."""
     plan = translate_steps(steps)
     if not playwright_available():
-        raise RuntimeError("Playwright not installed — `pip install streamlit-mcp` then "
-                           "`playwright install chromium`, or install pmkit[dogfood]")
+        raise RuntimeError("Playwright not installed — run `pip install 'pmkit[dogfood]'` "
+                           "then `playwright install chromium`")
     from playwright.sync_api import sync_playwright
 
     obs: list[dict] = []
     with sync_playwright() as p:
         browser = p.chromium.launch()
-        page = browser.new_page()
-        page.goto(url, timeout=timeout_ms)
-        for step in plan:
-            obs.append(_run_step(page, step))
-        browser.close()
+        try:
+            page = browser.new_page()
+            try:
+                page.goto(url, timeout=timeout_ms)
+            except Exception as e:
+                # a failed connect is a gap, not a crash (and must not skip browser.close)
+                obs.append({"step": f"goto {url}", "ok": False,
+                            "observed": f"{type(e).__name__}: {e}"})
+                return obs
+            for step in plan:
+                obs.append(_run_step(page, step))
+        finally:
+            browser.close()
     return obs
 
 

@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from typing import Iterable
 
-from ..backlog import Backlog
+from ..backlog import Backlog, make_dedup_key
 from .report import Finding
 
 
@@ -40,6 +40,9 @@ def file_gaps(
             target=target,
             title=f"[dogfood] {g.title}",
             problem=f"{g.claim} -> observed: {g.observed}".strip(),
+            # key on the gap's title (its real identity) so distinct gaps with similar
+            # output don't collapse into one — claim text is constant per interface.
+            dedup_key=make_dedup_key(target, f"{g.title} {g.observed}"),
             sources=[{"type": source, "url": "", "excerpt": (g.observed or "")[:200]}],
         )
         if len(backlog.list()) > before:
