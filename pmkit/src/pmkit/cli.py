@@ -324,6 +324,47 @@ def cmd_dogfood_mcp(args: argparse.Namespace) -> int:
     return _emit_obs(args, obs)
 
 
+# --------------------------------------------------------------------- launch
+def cmd_launch_announce(args: argparse.Namespace) -> int:
+    from .launch.store import LaunchStore
+    with LaunchStore(getattr(args, "db", None)) as st:
+        sid = st.announce(args.product, args.channel, url=args.url)
+    _emit(args, f"recorded announcement of {args.product} on {args.channel}",
+          {"id": sid, "product": args.product, "channel": args.channel, "status": "announced"})
+    return 0
+
+
+def cmd_launch_state(args: argparse.Namespace) -> int:
+    from .launch.store import LaunchStore
+    with LaunchStore(getattr(args, "db", None)) as st:
+        rows = st.list_state(product=args.product)
+    if getattr(args, "json", False):
+        print(json.dumps(rows, indent=2, default=str))
+        return 0
+    if not rows:
+        print("(no launch state recorded)")
+        return 0
+    print(f"{'PRODUCT':<20}  {'CHANNEL':<11}  {'STATUS':<9}  URL")
+    for r in rows:
+        print(f"{_truncate(r['product'],20):<20}  {r['channel']:<11}  "
+              f"{r['status']:<9}  {r.get('url') or '-'}")
+    return 0
+
+
+def cmd_launch_status(args: argparse.Namespace) -> int:
+    from .launch.store import LaunchStore
+    with LaunchStore(getattr(args, "db", None)) as st:
+        counts = st.status_counts(product=args.product)
+    if getattr(args, "json", False):
+        print(json.dumps(counts, indent=2))
+        return 0
+    scope = f" for {args.product}" if args.product else ""
+    print(f"launch state{scope}:")
+    for status, n in counts.items():
+        print(f"  {status:<10} {n}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     # Shared global flags, attached to each leaf command so they work *after* the
     # subcommand (e.g. `pmkit backlog list --json`), which is what users/agents type.
@@ -451,6 +492,28 @@ def build_parser() -> argparse.ArgumentParser:
     p_dfm.add_argument("--server", required=True, help="server launch command (quoted)")
     p_dfm.add_argument("--calls", required=True, help="JSON list of {tool,args}")
     p_dfm.set_defaults(func=cmd_dogfood_mcp)
+
+    # launch — the launch/amplify stage (logistics; never posts). Built up across units:
+    # state/status (U1), policy (U2), listen (U3), plan (U4), capture (U5), draft (U7).
+    p_lc = sub.add_parser("launch", help="prepare a product launch (logistics; never posts)")
+    lsub = p_lc.add_subparsers(dest="launch_command", required=True)
+
+    p_lan = lsub.add_parser("announce", parents=[common],
+                            help="record that a product was announced on a channel")
+    p_lan.add_argument("--product", required=True)
+    p_lan.add_argument("--channel", required=True,
+                       choices=["reddit", "hackernews", "x", "linkedin"])
+    p_lan.add_argument("--url")
+    p_lan.set_defaults(func=cmd_launch_announce)
+
+    p_lst = lsub.add_parser("state", parents=[common], help="list launch-state ledger rows")
+    p_lst.add_argument("--product")
+    p_lst.set_defaults(func=cmd_launch_state)
+
+    p_lstat = lsub.add_parser("status", parents=[common],
+                              help="show launch-state counts by status")
+    p_lstat.add_argument("--product")
+    p_lstat.set_defaults(func=cmd_launch_status)
 
     return parser
 
