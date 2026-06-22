@@ -28,7 +28,7 @@
 
   <!-- ============ LEFT: wordmark block ============ -->
   <circle cx="70" cy="115" r="4" fill="#F59E0B"/>
-  <text x="84" y="120" font-family="'Cascadia Code','Consolas',monospace" font-size="13" letter-spacing="3" fill="#64748B">OPEN-SOURCE &#183; CLI &amp; CLAUDE CODE PLUGIN</text>
+  <text x="84" y="120" font-family="'Cascadia Code','Consolas',monospace" font-size="13" letter-spacing="3" fill="#94A3B8">OPEN-SOURCE &#183; CLI &amp; CLAUDE CODE PLUGIN</text>
 
   <text x="64" y="206" font-family="'Cascadia Code','Consolas','SF Mono',monospace" font-size="76" font-weight="700" letter-spacing="-1">
     <tspan fill="#818CF8">pm</tspan><tspan fill="#475569">-</tspan><tspan fill="#F1F5F9">system</tspan>
@@ -36,8 +36,8 @@
 
   <text x="66" y="250" font-size="24" fill="#94A3B8">A product manager that runs as a <tspan fill="#CBD5E1" font-weight="600">funnel</tspan>.</text>
 
-  <text x="66" y="298" font-family="'Cascadia Code','Consolas',monospace" font-size="16" fill="#64748B">
-    discover <tspan fill="#6366F1">&#8594;</tspan> stress-test <tspan fill="#6366F1">&#8594;</tspan> rank <tspan fill="#6366F1">&#8594;</tspan> spec <tspan fill="#6366F1">&#8594;</tspan> <tspan fill="#F59E0B">&#10003; ship</tspan>
+  <text x="66" y="298" font-family="'Cascadia Code','Consolas',monospace" font-size="17" fill="#94A3B8">
+    discover <tspan fill="#818CF8" font-size="19" font-weight="700">&#8594;</tspan> stress-test <tspan fill="#818CF8" font-size="19" font-weight="700">&#8594;</tspan> rerank <tspan fill="#818CF8" font-size="19" font-weight="700">&#8594;</tspan> spec <tspan fill="#818CF8" font-size="19" font-weight="700">&#8594;</tspan> <tspan fill="#F59E0B">&#10003; ship</tspan>
   </text>
 
   <!-- ============ RIGHT: 3D funnel illustration ============ -->
