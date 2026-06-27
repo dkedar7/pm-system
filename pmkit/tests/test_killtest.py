@@ -52,3 +52,40 @@ def test_cli_killtest_decide_prunes_on_solved(tmp_path):
     verdicts = '[{"axis":"already-solved","verdict":"refute","confidence":0.95}]'
     rc = main(["backlog", "killtest", "--db", db, "1", "--decide", "--verdicts", verdicts])
     assert rc == 0 and Backlog(db).get(1)["status"] == "pruned"
+
+
+def test_cli_killtest_decide_via_verdicts_file(tmp_path):
+    """--verdicts-file is the robust path: a real verdicts blob (long reasons with
+    quotes/parens) corrupts when routed through an LLM agent's shell command, which
+    silently empties the array and mis-gates. A file path can't be mangled. This
+    locks in that --verdicts-file reads the file and decides identically to --verdicts."""
+    import json
+
+    db = str(tmp_path / "b.db")
+    main(["backlog", "add", "--db", db, "--target", "o/r", "--title", "Two refutes"])
+    # 2 refutes, no dispositive already-solved -> survives (the case the bug pruned).
+    verdicts = [
+        {"axis": "already-solved", "verdict": "survive", "confidence": 0.72,
+         "reason": "gap is open; needs a docs page (not a build)", "evidence": ["a", "b"]},
+        {"axis": "pain-is-rare", "verdict": "refute", "confidence": 0.9},
+        {"axis": "infeasible", "verdict": "survive", "confidence": 0.9},
+        {"axis": "won't-be-adopted", "verdict": "refute", "confidence": 0.62},
+    ]
+    vf = tmp_path / "verdicts.json"
+    vf.write_text(json.dumps(verdicts), encoding="utf-8")
+    rc = main(["backlog", "killtest", "--db", db, "1", "--decide", "--verdicts-file", str(vf)])
+    assert rc == 0 and Backlog(db).get(1)["status"] == "survived"
+
+
+def test_cli_killtest_verdicts_file_wins_over_verdicts(tmp_path):
+    """When both are given, the file is authoritative (the shell arg may be mangled)."""
+    import json
+
+    db = str(tmp_path / "b.db")
+    main(["backlog", "add", "--db", db, "--target", "o/r", "--title", "File wins"])
+    vf = tmp_path / "v.json"
+    vf.write_text(json.dumps([{"axis": "already-solved", "verdict": "refute", "confidence": 0.95}]),
+                  encoding="utf-8")
+    rc = main(["backlog", "killtest", "--db", db, "1", "--decide",
+               "--verdicts", "[]", "--verdicts-file", str(vf)])
+    assert rc == 0 and Backlog(db).get(1)["status"] == "pruned"

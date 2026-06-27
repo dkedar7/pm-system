@@ -162,10 +162,22 @@ def cmd_backlog_spec(args: argparse.Namespace) -> int:
 def cmd_backlog_killtest(args: argparse.Namespace) -> int:
     """Persist kill-test verdicts and move new -> survived | pruned. Used by the
     pm-run orchestrator (and available to humans for parity)."""
+    # --verdicts-file is the robust path: a large verdicts blob (long reasons with
+    # quotes/parens/em-dashes) corrupts when routed through an LLM agent's shell
+    # command, which silently empties the array and makes decide_survival mis-gate.
+    # A clean file path can't be mangled. --verdicts-file wins if both are given.
+    raw = args.verdicts
+    if getattr(args, "verdicts_file", None):
+        try:
+            with open(args.verdicts_file, encoding="utf-8") as fh:
+                raw = fh.read()
+        except OSError as e:
+            print(f"cannot read --verdicts-file: {e}", file=sys.stderr)
+            return 1
     try:
-        verdicts = json.loads(args.verdicts) if args.verdicts else []
+        verdicts = json.loads(raw) if raw else []
     except json.JSONDecodeError as e:
-        print(f"bad --verdicts JSON: {e}", file=sys.stderr)
+        print(f"bad verdicts JSON: {e}", file=sys.stderr)
         return 1
     reason = ""
     if getattr(args, "decide", False):
@@ -562,6 +574,9 @@ def build_parser() -> argparse.ArgumentParser:
     kt_grp.add_argument("--decide", action="store_true",
                         help="apply the survival rule from --verdicts (already-solved is dispositive)")
     p_kt.add_argument("--verdicts", help="JSON array of per-axis verdicts")
+    p_kt.add_argument("--verdicts-file",
+                      help="path to a JSON file of per-axis verdicts (robust alternative to "
+                           "--verdicts; avoids shell-mangling a large blob). Wins if both given.")
     p_kt.set_defaults(func=cmd_backlog_killtest, survived=None)
 
     p_score = bsub.add_parser("score", parents=[common],
