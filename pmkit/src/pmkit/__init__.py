@@ -5,4 +5,4 @@ stages (kill-test, reranking, spec drafting) run as agents/skills in the plugin 
 read/write the same backlog through this package.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"

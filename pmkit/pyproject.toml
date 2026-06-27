@@ -1,6 +1,6 @@
 [project]
 name = "pmkit"
-version = "0.1.0"
+version = "0.1.1"
 description = "Human-first CLI for the pm-system opportunity funnel: discovery + backlog."
 readme = "README.md"
 requires-python = ">=3.10"
