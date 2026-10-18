@@ -16,9 +16,11 @@ environment (no inherited API keys/secrets); callers opt specific vars back in v
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import subprocess
 import tempfile
+import venv
 from dataclasses import asdict, dataclass, field
 from typing import Optional
 
@@ -72,16 +74,24 @@ def run_documented_install(
     workdir: Optional[str] = None,
     timeout: float = 120.0,
     env: Optional[dict] = None,
+    isolate_python: bool = True,
 ) -> InstallReport:
     """Run each documented command in a throwaway dir; return a per-step report.
 
     A non-zero exit, timeout, or spawn failure marks that step as a gap and the run
     proceeds to the next command rather than raising.
+
+    Docs often say plain ``pip install X``. Run verbatim, that installs into (and can
+    upgrade packages in) the operator's own Python. So when any command uses pip,
+    ``isolate_python`` first creates a venv in the throwaway dir and puts it at the front
+    of PATH: ``pip``, ``python`` and the installed console scripts then resolve inside it.
     """
     report = InstallReport()
     cleanup = workdir is None
     workdir = workdir or tempfile.mkdtemp(prefix="pmkit-dogfood-")
     run_env = _clean_env(env)
+    if isolate_python and any(_PIP_RE.search(c) for c in commands):
+        _prepend_venv(workdir, run_env)
     try:
         for cmd in commands:
             report.steps.append(_run_one(cmd, workdir, timeout, run_env))
@@ -89,6 +99,18 @@ def run_documented_install(
         if cleanup:
             shutil.rmtree(workdir, ignore_errors=True)
     return report
+
+
+_PIP_RE = re.compile(r"(^|[\s;&|(])(pip3?|python3?\s+-m\s+pip|py\s+-m\s+pip)\s+install\b")
+
+
+def _prepend_venv(workdir: str, env: dict) -> None:
+    """Create ``<workdir>/.venv`` and put its scripts dir first on ``env['PATH']``."""
+    venv_dir = os.path.join(workdir, ".venv")
+    venv.EnvBuilder(with_pip=True, clear=True).create(venv_dir)
+    bin_dir = os.path.join(venv_dir, "Scripts" if os.name == "nt" else "bin")
+    env["PATH"] = bin_dir + os.pathsep + env.get("PATH", "")
+    env["VIRTUAL_ENV"] = venv_dir
 
 
 def _run_one(cmd: str, cwd: str, timeout: float, env: dict) -> StepResult:
