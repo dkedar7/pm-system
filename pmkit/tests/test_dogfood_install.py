@@ -57,3 +57,26 @@ def test_clean_env_excludes_secrets(monkeypatch):
     assert "ANTHROPIC_API_KEY" not in env  # operator secrets withheld
     assert "PATH" in env                    # but the basics pass through
     assert _clean_env({"ANTHROPIC_API_KEY": "x"})["ANTHROPIC_API_KEY"] == "x"  # opt-in
+
+
+def test_pip_install_runs_in_a_throwaway_venv(tmp_path):
+    """Dogfood 2026-10-18: a documented 'pip install X' upgraded packages in the operator's
+    own Python. With pip in the commands, a venv in the workdir comes first on PATH."""
+    import sys
+
+    from pmkit.dogfood.install import run_documented_install
+
+    rep = run_documented_install(
+        ["pip install --help", 'python -c "import sys; print(sys.prefix)"'],
+        workdir=str(tmp_path), timeout=300,
+    )
+    assert rep.all_ok, rep.to_dict()
+    prefix = rep.steps[1].output.strip().splitlines()[-1]
+    assert str(tmp_path) in prefix and prefix != sys.prefix
+
+
+def test_no_venv_without_pip(tmp_path):
+    from pmkit.dogfood.install import run_documented_install
+
+    run_documented_install(['python -c "print(1)"'], workdir=str(tmp_path))
+    assert not (tmp_path / ".venv").exists()
